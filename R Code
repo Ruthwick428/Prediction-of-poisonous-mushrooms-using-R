@@ -1,0 +1,572 @@
+# some of the packages used by me are as follows
+library(mlr)
+library(readr)
+library(data.table)
+library(dplyr)
+
+# I have downloaded the data from the link below. Please use this link to download the data 
+# https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/expanded.Z
+# after this I have tried to clean the data a little in the excel by removing some of the 
+# unwanted rows in the beginning.
+# I have included a code in the end that saves the cleaned data to the system
+# Please save this code to the system and set the working directory
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DATA CLEANING~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+setwd(getwd())
+# since there were no columns in the data I have created a vector having the column names
+# as below.
+colmnames <- c("mushroom_type","cap_shape", "cap_surface", "cap_color","bruises","odor",
+               "gill_attachment","gill_spacing", "gill_size","gill_color",
+               "stalk_shape","stalk_root","stalk_surface_above_ring",
+               "stalk_surface_below_ring","stalk_color_above_ring",
+               "stalk_color_below_ring","veil_type","veil_color","ring_number",
+               "ring_type","spore_print_color","population","habitat")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# I have read the data into R object as below
+raw_data <- read_csv("expanded.csv", 
+                     col_names = colmnames)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Since all the variables are categorical I used sappy to loop over all the
+# variables to convert them to factors and make a matrix 
+Totaldata <- sapply(raw_data, as.factor)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Since sapply makes a matrix I converted it into a data frame for convenience
+Totaldata <- as.data.frame(Totaldata)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# I then converted the R object Totaldata into a data table which is a convenient
+# way of data manipulation
+Totaldata <- data.table(Totaldata)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# I then summarized the columns to see if all the variables are converted to 
+# factors and if there are any missing values in any column
+str(Totaldata)
+
+
+#~~~~~~~~~~~~~~~~~~DATA EXPLORATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# since all the vaiables are categorical, I have used bar plots as my 
+# primary exploratory data analysis plots to understand the data.
+# I have collapsed some of the levels in some of the variables because if I split the
+# data into training and testing, some of the levels maynot be present in the test data
+# Although, this level colapsing is not required if the whole data is considered to build
+# the model.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = cap_shape, fill = mushroom_type))+geom_bar()+
+labs(title = "bar chart between cap shape and mushroom type")
+# we can see in the above bar graph that some of the factors like BELL, CONICAL
+# KNOBBED and SUNKEN are having very minimum count and hence are to be colapsed
+
+table(Totaldata$cap_shape)
+# the table above shows the frequency of each factor in the variable
+
+# Doing the level colapsing as mentioned above with the code below
+Totaldata$cap_shape <-  ifelse(Totaldata$cap_shape == "CONICAL","CONVEX",
+                               ifelse(Totaldata$cap_shape == "SUNKEN","CONVEX",
+                                      ifelse(Totaldata$cap_shape == "BELL","CONVEX",
+                                             Totaldata$cap_shape)))
+
+# Renaming the levels to the they were before
+Totaldata[,cap_shape := ifelse(cap_shape == "3","CONVEX",
+                               ifelse(cap_shape == "4","FLAT",
+                                      ifelse(cap_shape == "5","KNOBBED",cap_shape)))]
+
+# Converting the variable back to factor
+Totaldata$cap_shape <- as.factor(Totaldata$cap_shape)
+# Looking at the bar plot again with the colapsed levels
+ggplot(Totaldata, aes(x = cap_shape, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between cap shape and mushroom type")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = cap_surface, fill = mushroom_type))+geom_bar()+
+labs(title = "bar chart between cap surface and mushroom type")
+# here we can see that the factor level frequency or count of
+# GROOVES is close to 0. Hence it has to be colapsed or else it would be
+# problem while data split in train and test. 
+
+table(Totaldata$cap_surface)
+# the table above shows the frequency of each factor in the variable
+
+# Doing the level colapsing as mentioned above with the code below
+Totaldata$cap_surface <-  ifelse(Totaldata$cap_surface == "GROOVES","SMOOTH",
+                                 Totaldata$cap_surface)
+# renaming the levels 
+Totaldata[,cap_surface := ifelse(cap_surface == "1","FIBROUS",
+                                 ifelse(cap_surface == "3","SCALY",
+                                        ifelse(cap_surface == "4","SMOOTH",cap_surface)))]
+#converting the variable to factor
+Totaldata$cap_surface <- as.factor(Totaldata$cap_surface)
+
+# colapsed levels plot
+ggplot(Totaldata, aes(x = cap_surface, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between cap surface and mushroom type")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(Totaldata, aes(x = cap_color, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between cap color and mushroom type")
+# Here we can see that a lot of variables like BUFF, CINAMMON, GREEN,
+# PINK, PURPLE have very less count and hence need to be colapsed
+
+table(Totaldata$cap_color)
+# the table above shows the frequency of each factor in the variable
+
+# Colapsing the levels as stated above
+Totaldata$cap_color <-  ifelse(Totaldata$cap_color == "BUFF","Comb",
+                               ifelse(Totaldata$cap_color == "CINNAMON","Comb",
+                                      ifelse(Totaldata$cap_color == "GREEN","Comb",
+                                             ifelse(Totaldata$cap_color == "PINK","Comb",
+                                                    ifelse(Totaldata$cap_color == "PURPLE","Comb",
+                                                           ifelse(Totaldata$cap_color == "WHITE","Comb",Totaldata$cap_color))))))
+# renaming the levels back to the way they were
+Totaldata[,cap_color := ifelse(cap_color == "1","BROWN",
+                                 ifelse(cap_color == "10","YELLOW",
+                                        ifelse(cap_color == "4","GRAY",
+                                               ifelse(cap_color == "8","RED",cap_color))))]
+
+#converting the variable to factor
+Totaldata$cap_color <- as.factor(Totaldata$cap_color)
+
+#Looking at the levels again
+ggplot(Totaldata, aes(x = cap_color, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between cap color and mushroom type")
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(Totaldata, aes(x = bruises, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between bruises and mushroom type")
+# we can see that bruises seem to be having good count
+table(Totaldata$bruises)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+ggplot(Totaldata, aes(x = odor, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between odor and mushroom type")
+# here we can see that some of the levels in the variables are
+# perfect predictors and it may lead to quasi complete seperation if used in logistic regression and since
+# i would be using randomforest I would be keeping this variable in the model
+table(Totaldata$odor)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$odor <-  ifelse(Totaldata$odor == "CREOSOTE","Comb",
+                          ifelse(Totaldata$odor == "MUSTY","Comb",
+                                 ifelse(Totaldata$odor == "PUNGENT","Comb",
+                                ifelse(Totaldata$odor == "SPICY","Comb",
+                                       ifelse(Totaldata$odor == "FISHY","Comb",
+                                              ifelse(Totaldata$odor == "FOUL","Comb",
+                                                     ifelse(Totaldata$odor == "ALMOND","Comb1",
+                                                            ifelse(Totaldata$odor == "ANISE","Comb1",
+                                                                   ifelse(Totaldata$odor == "NONE","Comb1",
+                                                                   Totaldata$odor)))))))))
+
+# another look at the plot with the colapsed levels
+ggplot(Totaldata, aes(x = odor, fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between odor and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = gill_attachment,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between gill attachment and mushroom type")
+# here we can see another instance of quasi complete seperation and so
+# i would be removing this from the model
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+ggplot(Totaldata, aes(x = gill_spacing,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between gill spacing and mushroom type")
+
+# another instance of perfect prediction although, there seems to be some 
+# obseravtions in each level, it can be of some significance but not much
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = gill_size,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between gill size and mushroom type")
+# here the mushroom type is spread across the two levels of gill_size
+# in way that suggests lower entropy and inturn higher information gain
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = gill_color,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between gill color and mushroom type")
+# We can see that some of the levels have very less count and hence they
+# need to be colapsed
+# Colapsing the levels as mentioned above
+Totaldata$gill_color <-  ifelse(Totaldata$gill_color == "GREEN","BUFF",
+                                ifelse(Totaldata$gill_color == "ORANGE","WHITE",
+                                       ifelse(Totaldata$gill_color == "RED","WHITE",
+                                              ifelse(Totaldata$gill_color == "YELLOW","WHITE",
+                                                     ifelse(Totaldata$gill_color == "BLACK","WHITE",
+                                                            ifelse(Totaldata$gill_color == "BROWN","WHITE",
+                                                                   Totaldata$gill_color))))))
+
+# renaming the levels back to the way they were for convenience
+Totaldata[,gill_color := ifelse(gill_color == "11","WHITE",
+                               ifelse(gill_color == "3","BUFF",
+                                      ifelse(gill_color == "4","CHOCOLATE",
+                                             ifelse(gill_color == "5","GRAY",
+                                                    ifelse(gill_color == "8","PINK",
+                                                           ifelse(gill_color == "9","PURPLE",
+                                                                  gill_color))))))]
+# looking at the levels again
+ggplot(Totaldata, aes(x = gill_color,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between gill color and mushroom type")
+
+
+table(Totaldata$gill_color)
+# the table above shows the frequency of each factor in the variable
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = stalk_shape,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk shape and mushroom type")
+# here the mushroom type levels are spread across in almost equal proportions
+# suggesting a higher entropy and lower information gain which tells us that the 
+# variable is not that significant
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = stalk_root,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk root and mushroom type")
+# here we can see that some of the levels like CLUB and ROOTED seem to
+# have very less count and hence can be combined with the level EQUAL
+# since they are close to perfect predictors and can give higher 
+# information gain
+
+table(Totaldata$stalk_root)
+# the table above shows the frequency of each factor in the variable
+# colapsing the levels as mentioned above
+Totaldata$stalk_root<-  ifelse(Totaldata$stalk_root == "CLUB","BULBOUS",
+                          ifelse(Totaldata$stalk_root == "EQUAL","BULBOUS",
+                            ifelse(Totaldata$stalk_root == "ROOTED","BULBOUS",Totaldata$stalk_root)))
+
+# renaming the levels for convenience
+Totaldata[,stalk_root := ifelse(stalk_root == "1","NONE",
+                                ifelse(stalk_root == "2","BULBOUS",stalk_root))]
+
+table(Totaldata$stalk_root)
+# the table above shows the frequency of each factor in the variable
+
+# looking at the levels again
+ggplot(Totaldata, aes(x = stalk_root,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk root and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = stalk_surface_above_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk surface above the ring and mushroom type")
+# here we can see that some of the levels like FIBROUS SCALY have very less 
+# count and hence need to combined with SMOOTH level since it has more
+# proportion of EDIBLE level
+
+table(Totaldata$stalk_surface_above_ring)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$stalk_surface_above_ring <-  ifelse(Totaldata$stalk_surface_above_ring == "SCALY","SILKY",
+                                              ifelse(Totaldata$stalk_surface_above_ring == "FIBROUS","SMOOTH",Totaldata$stalk_surface_above_ring))
+
+# renaming the levels for convenience
+Totaldata[,stalk_surface_above_ring := ifelse(stalk_surface_above_ring == "3","SILKY",
+                                ifelse(stalk_surface_above_ring == "4","SMOOTH",stalk_surface_above_ring))]
+
+#looking at the frequency again
+table(Totaldata$stalk_surface_above_ring)
+
+# looking at the levels gain
+ggplot(Totaldata, aes(x = stalk_surface_above_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk surface above the ring and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = stalk_surface_below_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk surface below the ring and mushroom type")
+# here we can see that some of the levels like FIBROUS SCALY have very less 
+# count and hence need to combined with SMOOTH level since it has more
+# proportion of EDIBLE level
+
+table(Totaldata$stalk_surface_below_ring)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$stalk_surface_below_ring <-  ifelse(Totaldata$stalk_surface_below_ring == "SCALY","SMOOTH",
+                                              ifelse(Totaldata$stalk_surface_below_ring == "FIBROUS","SMOOTH",Totaldata$stalk_surface_below_ring))
+
+# renaming the levels for convenience
+Totaldata[,stalk_surface_below_ring := ifelse(stalk_surface_below_ring == "3","SILKY",
+                                              ifelse(stalk_surface_below_ring == "4","SMOOTH",stalk_surface_below_ring))]
+# looking at the frequency again
+table(Totaldata$stalk_surface_below_ring)
+
+# looking at the colapsed levels
+ggplot(Totaldata, aes(x = stalk_surface_below_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk surface below the ring and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = stalk_color_above_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk color above the ring and mushroom type")
+# Here we can see that some of the levels like BROWN, BUFF, CINNAMON, GRAY,
+#ORANGE, RED have very less count and hence need to be combined with WHITE
+# level since it has more EDIBLE level.
+
+table(Totaldata$stalk_color_above_ring)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$stalk_color_above_ring <-  ifelse(Totaldata$stalk_color_above_ring == "BUFF","PINK",
+                                            ifelse(Totaldata$stalk_color_above_ring == "CINNAMON","PINK",
+                                                   ifelse(Totaldata$stalk_color_above_ring == "ORANGE","WHITE",
+                                                          ifelse(Totaldata$stalk_color_above_ring == "RED","WHITE",
+                                                                 ifelse(Totaldata$stalk_color_above_ring == "YELLOW","PINK",
+                                                                        ifelse(Totaldata$stalk_color_above_ring == "BROWN","PINK",
+                                                                               ifelse(Totaldata$stalk_color_above_ring == "GRAY","WHITE",Totaldata$stalk_color_above_ring)))))))
+# renaming the levels for convenience
+Totaldata[,stalk_color_above_ring := ifelse(stalk_color_above_ring == "6","PINK",
+                                            ifelse(stalk_color_above_ring == "8","WHITE",stalk_color_above_ring))]
+                                              
+table(Totaldata$stalk_color_above_ring)
+# looking at the frequency again
+
+# ploting the colpased levels
+ggplot(Totaldata, aes(x = stalk_color_above_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk color above the ring and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = stalk_color_below_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk color below the ring and mushroom type")
+# Here we can see that some of the levels like BROWN, BUFF, CINNAMON, GRAY,
+#ORANGE, RED have very less count and hence need to be combined with WHITE
+# level since it has more EDIBLE level.
+
+table(Totaldata$stalk_color_below_ring)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$stalk_color_below_ring <-  ifelse(Totaldata$stalk_color_below_ring == "BUFF","PINK",
+                                            ifelse(Totaldata$stalk_color_below_ring == "CINNAMON","PINK",
+                                                   ifelse(Totaldata$stalk_color_below_ring == "ORANGE","WHITE",
+                                                          ifelse(Totaldata$stalk_color_below_ring == "RED","WHITE",
+                                                                 ifelse(Totaldata$stalk_color_below_ring == "YELLOW","PINK",
+                                                                        ifelse(Totaldata$stalk_color_below_ring == "BROWN","PINK",
+                                                                               ifelse(Totaldata$stalk_color_below_ring == "GRAY","WHITE",Totaldata$stalk_color_below_ring)))))))
+                                            
+# renaming the levels for convenience
+Totaldata[,stalk_color_below_ring := ifelse(stalk_color_below_ring == "6","PINK",
+                                    ifelse(stalk_color_below_ring == "8","WHITE",stalk_color_below_ring))]
+#looking at the frequency again
+table(Totaldata$stalk_color_below_ring)  
+
+# ploting the colapsed levels
+ggplot(Totaldata, aes(x = stalk_color_below_ring,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between stalk color below the ring and mushroom type")                                            
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = veil_type,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between veil type and mushroom type")
+# Here we can see that there is only one level and hence will not have
+# any significance. This will be removed from the model.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = veil_color,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between veil color and mushroom type")
+# Here we can see that there are levels like BROWN, ORANGE and YELLOW have very less count 
+# and hence will not have
+# any significance. This will be removed from the model.
+
+table(Totaldata$veil_color)
+# the table above shows the frequency of each factor in the variable
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(Totaldata, aes(x = ring_number,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between ring number and mushroom type")
+# Here we can see that the levels NONE and TWO have very little count
+# and colapsing them into one level will not do any good to the 
+# accuracy of the model. Hence I will be removing this from the model
+
+table(Totaldata$ring_number)
+# the table above shows the frequency of each factor in the variable
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(Totaldata, aes(x = ring_type,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between ring type and mushroom type")
+# Here we can combine the levels FLARING with PENDANT and LARGE,NONE
+# with EVANESCENT to reduce the entropy and there by improve the 
+# information gain
+
+table(Totaldata$ring_type)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$ring_type <- ifelse(Totaldata$ring_type == "FLARING","PENDANT",
+                              ifelse(Totaldata$ring_type == "NONE","EVANESCENT",
+                                     ifelse(Totaldata$ring_type == "LARGE","EVANESCENT",
+                                            ifelse(Totaldata$ring_type == "LARGE","EVANESCENT",Totaldata$ring_type))))
+
+# renaming the levels for convenience
+Totaldata[,ring_type := ifelse(ring_type == "1","EVANESCENT",
+                                            ifelse(ring_type == "5","PENDANT",ring_type))]
+# looking at the frequency again
+table(Totaldata$ring_type)
+
+# ploting the colapsed levels again
+ggplot(Totaldata, aes(x = ring_type,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between ring type and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = spore_print_color,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between spore print color and mushroom type")
+# Here we can comibine the levels BLACK, BROWN, BUFF, ORANGE, PURPLE and
+# YELLOW together and CHOCOLATE and WHITE together to reduce the entropy
+# in the model and there by improve the information gain
+
+table(Totaldata$spore_print_color)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$spore_print_color <- ifelse(Totaldata$spore_print_color == "BUFF","BROWN",
+                                      ifelse(Totaldata$spore_print_color == "GREEN","WHITE",
+                                             ifelse(Totaldata$spore_print_color == "ORANGE","BROWN",
+                                                    ifelse(Totaldata$spore_print_color == "PURPLE","BROWN",
+                                                           ifelse(Totaldata$spore_print_color == "YELLOW","BROWN",
+                                                                  ifelse(Totaldata$spore_print_color == "CHOCOLATE","WHITE",
+                                                                         ifelse(Totaldata$spore_print_color == "BLACK","BROWN",
+                                                                                Totaldata$spore_print_color)))))))
+
+# renaming the levels for convenience
+Totaldata[,spore_print_color := ifelse(spore_print_color == "2","BROWN",
+                               ifelse(spore_print_color == "8","WHITE",spore_print_color))]
+# looking at the frequency again
+table(Totaldata$spore_print_color)
+# ploting the colapsed levels again
+ggplot(Totaldata, aes(x = spore_print_color,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between spore print color and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = population,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between population and mushroom type")
+# Here we can combine the levels ABUNDANT, CLUSTERED, NUMEROUS, SCATTERED
+# and SOLITARY together to improve the information gain
+
+
+table(Totaldata$population)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$population <- ifelse(Totaldata$population == "ABUNDANT","SOLITARY",
+                                      ifelse(Totaldata$population == "CLUSTERED","SOLITARY",
+                                             ifelse(Totaldata$population == "NUMEROUS","SOLITARY",
+                                                    ifelse(Totaldata$population == "SCATTERED","SOLITARY",Totaldata$population))))
+
+# renaming the levels for convenience
+Totaldata[,population := ifelse(population == "5","SEVERAL",
+                                       ifelse(population == "6","SOLITARY",population))]
+# looking at the frequency again
+table(Totaldata$population)
+
+# ploting the colapsed levels again
+ggplot(Totaldata, aes(x = population,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between population and mushroom type")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggplot(Totaldata, aes(x = habitat,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between habitat and mushroom type")
+
+table(Totaldata$habitat)
+# the table above shows the frequency of each factor in the variable
+
+# colapsing the levels as mentioned above
+Totaldata$habitat <- ifelse(Totaldata$habitat == "MEADOWS","WOODS",
+                            ifelse(Totaldata$habitat == "URBAN","PATHS",
+                                   ifelse(Totaldata$habitat == "WASTE","WOODS",
+                                          Totaldata$habitat)))
+
+# renaming the levels for convenience
+Totaldata[,habitat := ifelse(habitat == "1","GRASSES",
+                                ifelse(habitat == "2","LEAVES",
+                                       ifelse(habitat == "4","PATHS",
+                                              ifelse(habitat == "7","WOODS",habitat))))]
+# looking at the frequency again
+table(Totaldata$habitat)
+# ploting the colapsed levels
+ggplot(Totaldata, aes(x = habitat,fill = mushroom_type))+geom_bar()+
+  labs(title = "bar chart between habitat and mushroom type")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Some of the variables removed are as follows
+
+Totaldata$veil_type <- NULL
+Totaldata$ring_number <- NULL
+Totaldata$veil_color <- NULL
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# After the manipulation some of the variables had to be converted back to factors 
+
+Totaldata <- as.data.frame(Totaldata)
+Totaldata <- sapply(Totaldata, as.factor)
+Totaldata <- as.data.frame(Totaldata)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Now I am shuffling the data by number of rows so that the last 20% of the rows can be 
+# taken as validation data
+
+Totaldata <- Totaldata[sample(nrow(Totaldata)),]
+dim(Totaldata)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Diving the data into 80% train and 20% of validation data or test data
+
+Traindata <- Totaldata[1:6740,]
+Testdata <- Totaldata[6741:8416,]
+str(Traindata)
+str(Testdata)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Creating a Task for the mlr package. This is basically setting up the data before it can
+# be trained
+
+Train_Task <- makeClassifTask(data = Traindata, target = "mushroom_type")
+Test_Task <- makeClassifTask(data = Testdata, target = "mushroom_type")
+
+# This gives the relative importance of each variable by taking information gain
+# into consideration which is 1- entropy
+
+im_feat1 <- generateFilterValuesData(Train_Task, method = c("information.gain"))
+plotFilterValues(im_feat1,n.show = 24)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Looking at the tunable perameters for randomforest
+getParamSet("classif.randomForest")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Making a classification learner. This tells R that a randomforest model needs to be 
+# built
+logit_mush <- makeLearner("classif.randomForest", predict.type = "response")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# setting up the tunable parameters for hyper tuning. The model takes random values for
+# the parameters between the lower and upper bounds provided.
+rf_parm <- makeParamSet(makeIntegerParam("mtry", lower = 1, upper = 5),
+                    makeIntegerParam("ntree", lower = 40, upper = 400 ),
+                    makeIntegerParam("nodesize", lower = 10, upper = 50))
+
+# 
+rf_parm$par.vals <- list(mtry = 5, ntree = 200, information.gain = TRUE)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Setting up a random control parameter which takes values from tunable parameters
+# randomly and build a bagging model. These max iterations tells the model to iterate
+# 10 times
+
+Rand <- makeTuneControlRandom(maxit = 10L)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# making a crossvalidation parameter so that the algorithm uses it to predict the 
+# mean accuracy of the model on the validation data set it automatically creates
+
+rf_cv <- makeResampleDesc("CV",iters = 3L )
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Here the parameters are tuned by providing the learner, task, crossvalidation,
+# measure to be used for deciding the model parameters, parameter set and random control
+# parameter to the function tuneParams() 
+rf_tune <- tuneParams(learner = logit_mush, task = Train_Task,
+                      resampling = rf_cv, measures = acc, 
+                      par.set = rf_parm, control = Rand )
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Setting the tuned parameters to the learner parameters by the following code
+rf_hyper <- setHyperPars(learner =  logit_mush, par.vals = rf_tune$x)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# building he model using the train data set with the learner
+rf_Train <- train(learner = logit_mush, task = Train_Task)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Predict the Test data set
+rf_Test_pred <- predict(rf_Train, Test_Task)
+# making a confusion matrix
+getConfMatrix(rf_Test_pred)
+
+
